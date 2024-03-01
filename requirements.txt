@@ -1,2 +1,2 @@
 Requests==2.31.0
-selenium==4.18.1
+vscode.py==2.0.0b2
