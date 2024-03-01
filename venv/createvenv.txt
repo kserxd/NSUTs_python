@@ -1,0 +1,1 @@
+Delete this file only if you want to recreate the venv! Do not include this file when you package/publish the extension.

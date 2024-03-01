@@ -1,0 +1,33 @@
+{
+  "name": "nsuts",
+  "displayName": "NSUTs",
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nsuts.reload",
+        "title": "Reload"
+      },
+      {
+        "command": "nsuts.login",
+        "title": "Login"
+      },
+      {
+        "command": "nsuts.panel",
+        "title": "Panel"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onCommand:nsuts.reload",
+    "onCommand:nsuts.login",
+    "onCommand:nsuts.panel"
+  ],
+  "dependencies": {
+    "ws": "^8.4.0"
+  },
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.58.0"
+  }
+}
