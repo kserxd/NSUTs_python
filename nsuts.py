@@ -276,7 +276,7 @@ class Main:
         self.apply()
 
         print("\n".join(self.get_olymps()))
-        self.choose_olymp("olympiad_195")#input("olymp id > "))
+        self.choose_olymp(input("olymp id > "))# olympiad_195
 
         self.get_tasks()
 
@@ -324,13 +324,18 @@ class Main:
     
 if __name__ == "__main__":
     options = Options()
-    #options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options = options)
     m = Main(driver, 'https://fresh.nsuts.ru/nsuts-new/login')
     pack : Pack = m.choose_tasks(int(input("pack index > ")))
     pack.load()
     pack.load_file()
-    pack.send_task(4)
-    pack.get_leaderboard()
-    
+
+    # pack.check_task()
+    # pack.get_leaderboard()
+    # pack.load()
+    # pack.load_code()
+    # pack.load_file()
+    # pack.send_task(number)
+    # pack.update_code()
