@@ -1,5 +1,7 @@
 # NSUTs (Python)
 
+![Kooha-2024-03-01-09-59-36-ezgif com-video-to-gif-converter](https://github.com/kserxd/NSUTs_python/assets/61553514/88748d98-dd52-47e8-b27a-4d0e3cfe0e54)
+
 ### TODO LIST
 
 > #### Connection
