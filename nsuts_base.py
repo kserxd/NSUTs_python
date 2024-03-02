@@ -118,6 +118,11 @@ class NsutsClient:
         response = self.__request_get__('/api/submit/submit_info').json()['tasks']
         return response
 
+    def get_reports(self):
+        response = self.__request_get__('/api/report/get_report').json()['submits']
+        return response
+    #key = lambda x: int(x['task_id'])
+
     def get_admin_queue(self, limit = 25, tasks = None):
         # type: (int, Optional[List[int]]) -> Any
         url = '/api/queue/submissions?limit=' + str(limit)

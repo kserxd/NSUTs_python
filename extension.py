@@ -45,31 +45,26 @@ import sys
 def compile_c_files(directory):
     # Get the list of C files in the directory
     c_files = [f for f in os.listdir(directory) if f.endswith('.c')]
-
+    os_name = sys.platform.lower()
+    if os_name == 'windows':
+        compiler = 'gcc'
+    elif os_name == 'linux' or os_name == 'darwin':
+        compiler = 'clang'
+    else:
+        raise Exception(f"Unsupported operating system: {os_name}")
+    command = f'{compiler} -w -lm -o "{directory}main" '
     # Compile each C file
     for c_file in c_files:
         filename = os.path.join(directory, c_file)
-        print(f"Compiling {filename}")
+        command += f'"{filename}" '
+    vscode.log(command)
+    os.system(command)
+    return os.path.join(directory, 'main')
 
-        # Determine the operating system
-        os_name = sys.platform.system().lower()
-
-        # Use the appropriate compiler for the OS
-        if os_name == 'windows':
-            compiler = 'gcc'
-        elif os_name == 'linux' or os_name == 'darwin':
-            compiler = 'clang'
-        else:
-            raise Exception(f"Unsupported operating system: {os_name}")
-
-        # Compile the C file using the appropriate compiler
-        command = f"{compiler} -o {c_file} {filename}"
-        print(command)
-        os.system(command)
-
+from vscode.context import Context
 @ext.event
 async def on_activate():
-    vscode.log(f"The ext '{ext.name}' started!")
+    await ext.commands[1].func(Context(ext.ws))
 
 @ext.command()
 async def reload(ctx: vscode.Context):
@@ -79,17 +74,33 @@ def init_workspace(user:nsuts_base.NsutsClient):
     home_path = os.path.expanduser('~') + "/.nsuts"
     if (not os.path.isdir(home_path)): os.mkdir(home_path) 
     for olymp in user.get_olympiads():
-        olymp_path = home_path + f"/{olymp['title']}"
+        olymp_path = home_path + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
         if (not os.path.isdir(olymp_path)): os.mkdir(olymp_path) 
         user.select_olympiad(olymp['id'])
         for tour in user.get_tours():
-            tour_path = olymp_path + f"/{tour['title']}"
+            tour_path = olymp_path + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
             if (not os.path.isdir(tour_path)): os.mkdir(tour_path) 
             user.select_tour(tour['id'])
             if (not os.path.exists(tour_path + '/statement.pdf')): user.download_tour_statement(tour_path)
+            with open(tour_path + '/reports.json', 'w') as f:
+                f.write('{"submits":[')
+                reports = user.get_reports()
+                for i in reports:
+                    f.write("{")
+                    f.write(f'"id" : {i["id"]},')
+                    f.write(f'"task_id" : {i["task_id"]},')
+                    f.write(f'"task_title" : "{i["task_title"]}",')
+                    f.write(f'"compiler" : "{i["compiler"]}",')
+                    f.write(f'"result_line" : "{i["result_line"]}",')
+                    f.write(f'"date" : "{i["date"]}"')
+                    f.write("}")
+                    if (reports[-1] != i): f.write(',') 
+                f.write(']}')
+                vscode.log(tour)
             for task in user.get_tasks():
-                task_path = tour_path + f"/{task['title']}"
+                task_path = tour_path + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
                 if (not os.path.isdir(task_path)): os.mkdir(task_path)
+
 
             
 
@@ -121,21 +132,29 @@ async def login(ctx: vscode.Context):
     
     user.auth()
     init_workspace(user)
-    return await ctx.show(vscode.InfoMessage(f'test'))
-
-@ext.command(keybind="shift+f5")
-async def build_and_run(ctx: vscode.Context):
-    return vscode.log(ctx.window.active_text_editor)
-
-@ext.command()
-async def panel(ctx: vscode.Context):
+    await ctx.show(vscode.InfoMessage(f'test'))
     return await ctx.env.ws.run_code('vscode.commands.executeCommand("vscode.openFolder", ' + 
                               "vscode.Uri.file('/home/deu/.nsuts')" + 
                               ')')
 
-@ext.command()
-async def main(ctx):
+def clear_executable(path):
+    if (os.path.exists(path)): os.remove(path)
+
+@ext.command(keybind="shift+f5")
+async def build_and_run(ctx: vscode.Context):
+    path = '/'.join((await ctx.env.ws.run_code('vscode.window.activeTextEditor.document.uri.fsPath', thenable = False)).split('/')[:-1]) + '/'
+    clear_executable(os.path.join(path, 'main'))
+    result = compile_c_files(path)
+    res = await ctx.window.active_terminal
+    await res.send_text(f'clear && {result}')
+    return res
+
+@ext.command(keybind="shift+f4")
+async def submit(ctx: vscode.Context):
     pass
 
+@ext.command()
+async def main(ctx: vscode.Context):
+    return 0
 
 ext.run()

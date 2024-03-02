@@ -17,8 +17,8 @@
         "title": "Build And Run"
       },
       {
-        "command": "nsuts.panel",
-        "title": "Panel"
+        "command": "nsuts.submit",
+        "title": "Submit"
       },
       {
         "command": "nsuts.main",
@@ -29,6 +29,10 @@
       {
         "command": "nsuts.buildAndRun",
         "key": "SHIFT+F5"
+      },
+      {
+        "command": "nsuts.submit",
+        "key": "SHIFT+F4"
       }
     ]
   },
@@ -36,7 +40,7 @@
     "onCommand:nsuts.reload",
     "onCommand:nsuts.login",
     "onCommand:nsuts.buildAndRun",
-    "onCommand:nsuts.panel",
+    "onCommand:nsuts.submit",
     "onCommand:nsuts.main"
   ],
   "dependencies": {

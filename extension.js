@@ -39,8 +39,8 @@ function registerCommands(context) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("nsuts.panel", () =>
-        commandCallback("panel")
+    vscode.commands.registerCommand("nsuts.submit", () =>
+        commandCallback("submit")
     )
   );
 
