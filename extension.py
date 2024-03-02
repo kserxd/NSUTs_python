@@ -96,13 +96,10 @@ async def login(ctx: vscode.Context):
     return await ctx.show(vscode.InfoMessage(f'test'))
 
 
-## WebPanel
-
 @ext.command()
 async def panel(ctx: vscode.Context):
-    panel = vscode.WebviewPanel("test", vscode.ViewColumn.Beside)
-    await panel._setup(ctx.ws)
-    await panel.set_html('<h1>HELLO WORLD FUCK YOU!</h1>')
-    return await panel.reveal()
+    return await ctx.env.ws.run_code('vscode.commands.executeCommand("vscode.openFolder", ' + 
+                              "vscode.Uri.file('/home/deu/.nsuts')" + 
+                              ')')
 
 ext.run()
