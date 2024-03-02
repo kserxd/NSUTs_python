@@ -95,6 +95,9 @@ async def login(ctx: vscode.Context):
     init_workspace(user)
     return await ctx.show(vscode.InfoMessage(f'test'))
 
+@ext.command()
+async def build_and_run(ctx: vscode.Context):
+    vscode.log(ctx.window.active_text_editor)
 
 @ext.command()
 async def panel(ctx: vscode.Context):
