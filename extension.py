@@ -39,6 +39,34 @@ config = {}
 
 database = DB('login.json')
 
+
+import sys
+
+def compile_c_files(directory):
+    # Get the list of C files in the directory
+    c_files = [f for f in os.listdir(directory) if f.endswith('.c')]
+
+    # Compile each C file
+    for c_file in c_files:
+        filename = os.path.join(directory, c_file)
+        print(f"Compiling {filename}")
+
+        # Determine the operating system
+        os_name = sys.platform.system().lower()
+
+        # Use the appropriate compiler for the OS
+        if os_name == 'windows':
+            compiler = 'gcc'
+        elif os_name == 'linux' or os_name == 'darwin':
+            compiler = 'clang'
+        else:
+            raise Exception(f"Unsupported operating system: {os_name}")
+
+        # Compile the C file using the appropriate compiler
+        command = f"{compiler} -o {c_file} {filename}"
+        print(command)
+        os.system(command)
+
 @ext.event
 async def on_activate():
     vscode.log(f"The ext '{ext.name}' started!")
@@ -95,14 +123,19 @@ async def login(ctx: vscode.Context):
     init_workspace(user)
     return await ctx.show(vscode.InfoMessage(f'test'))
 
-@ext.command()
+@ext.command(keybind="shift+f5")
 async def build_and_run(ctx: vscode.Context):
-    vscode.log(ctx.window.active_text_editor)
+    return vscode.log(ctx.window.active_text_editor)
 
 @ext.command()
 async def panel(ctx: vscode.Context):
     return await ctx.env.ws.run_code('vscode.commands.executeCommand("vscode.openFolder", ' + 
                               "vscode.Uri.file('/home/deu/.nsuts')" + 
                               ')')
+
+@ext.command()
+async def main(ctx):
+    pass
+
 
 ext.run()

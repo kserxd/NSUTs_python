@@ -33,8 +33,20 @@ function registerCommands(context) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("nsuts.buildAndRun", () =>
+        commandCallback("buildAndRun")
+    )
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("nsuts.panel", () =>
         commandCallback("panel")
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("nsuts.main", () =>
+        commandCallback("main")
     )
   );
 

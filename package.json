@@ -13,15 +13,31 @@
         "title": "Login"
       },
       {
+        "command": "nsuts.buildAndRun",
+        "title": "Build And Run"
+      },
+      {
         "command": "nsuts.panel",
         "title": "Panel"
+      },
+      {
+        "command": "nsuts.main",
+        "title": "Main"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "nsuts.buildAndRun",
+        "key": "SHIFT+F5"
       }
     ]
   },
   "activationEvents": [
     "onCommand:nsuts.reload",
     "onCommand:nsuts.login",
-    "onCommand:nsuts.panel"
+    "onCommand:nsuts.buildAndRun",
+    "onCommand:nsuts.panel",
+    "onCommand:nsuts.main"
   ],
   "dependencies": {
     "ws": "^8.4.0"
