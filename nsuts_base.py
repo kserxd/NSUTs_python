@@ -82,10 +82,52 @@ class NsutsClient:
     def get_olympiads(self):
         response = self.__request_get__('/api/olympiads/list').json()['registeredTo'];
         return response
+    
+    def get_olympiad_id_by_name(self, name):
+        for i in self.get_olympiads():
+            if i['title'].replace(' ', '_').replace('(', '').replace(')', '') == name:
+                return i['id']
+        return -1
+    
+    def get_olympiad_name_by_id(self, ids):
+        for i in self.get_olympiads():
+            if i['id'] == ids:
+                return i['title']
+        return -1
+
 
     def get_tours(self):
         response = self.__request_get__('/api/tours/list').json()['tours'];
         return response
+
+    def get_tour_id_by_name(self, name):
+        for i in self.get_tours():
+            if i['title'].replace(' ', '_').replace('(', '').replace(')', '') == name:
+                return i['id']
+        return -1
+            
+    def get_tour_name_by_id(self, ids):
+        for i in self.get_tours():
+            if i['id'] == ids:
+                return i['title']
+        return -1
+    
+    def get_tour_statement_id(self):
+        response = self.__request_get__("/api/news/page_info")
+        return response.json()['statements']['forTour'][0]['id']
+    
+    def get_tasks(self):
+        response = self.__request_get__('/api/submit/submit_info').json()['tasks']
+        return response
+    
+    def get_task_id_by_name(self, name):
+        for i in self.get_tasks():
+            if i['title'].replace(' ', '_').replace('(', '').replace(')', '') == name:
+                return int(i['id'])
+        return -1
+
+    def get_points(self, ids):
+        return self.__request_get__('/api/plugins/students/submit_points?id=' + str(ids)).json()['points']
 
 
     def select_olympiad(self, olympiad_id):
@@ -98,25 +140,31 @@ class NsutsClient:
         now_olympiad = self.__get_state__()['olympiad_id']
         assert str(now_olympiad) == str(olympiad_id), "Failed to change olympiad ID: have %s instead of %s" % (str(now_olympiad), str(olympiad_id))
 
+    
+
     def select_tour(self, tour_id):
         # type: (int) -> None
         response = self.__request_get__('/api/tours/enter?tour=' + str(tour_id))
         now_tour = self.__get_state__()['tour_id']
         assert str(now_tour) == str(tour_id), "Failed to change tour ID: have %s instead of %s" % (str(now_tour), str(tour_id))
-
-
-    def get_tour_statement_id(self):
-        response = self.__request_get__("/api/news/page_info")
-        return response.json()['statements']['forTour'][0]['id']
-    
+        
     def download_tour_statement(self, path):
         response = self.__request_get__(f"/api/news/tour_statement?id={self.get_tour_statement_id()}")
         with open(f"{path}/statement.pdf", 'wb') as f:
             f.write(response.content)
-        
-    def get_tasks(self):
-        response = self.__request_get__('/api/submit/submit_info').json()['tasks']
-        return response
+
+    def download_task(self, ids):
+        if (ids != -1):
+            submit_id = [i['id'] for i in self.get_reports() if (i['result_line'][-1] == "A" and i['task_id'] == ids)]
+            if (submit_id):
+                submit_id = submit_id[0]
+                response = self.__request_get__(f"/api/submit/get_source?id={submit_id}").json()
+                if (response['compiler'] == "emailtester"):
+                    return [response['data'], response['report'], response['compiler'] ]
+                else:
+                    return [response['text'], response['compiler']]
+        return -1
+    
 
     def get_reports(self):
         response = self.__request_get__('/api/report/get_report').json()['submits']
@@ -131,7 +179,11 @@ class NsutsClient:
         response = self.__request_get__(url)
         submits = json.loads(response.text)
         return submits
-    
+    # python
+    # c
+    # c++
+    # java
+    # text
     def get_solution_source(self, solution_id):
         # type: (int) -> bytes
         url = '/api/submit/get_source?id=' + str(solution_id)
@@ -152,6 +204,10 @@ class NsutsClient:
             'sourceText': source_text
         }
         response = self.__request_post__('/api/submit/do_submit', data, is_json = False)
+    
+    def get_compilators(self):
+        response = self.__request_get__('/api/submit/submit_info').json()['langs']
+        return response
 
     def get_my_last_submit_id(self):
         # type: () -> Optional[int]

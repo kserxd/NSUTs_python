@@ -1,6 +1,8 @@
+import base64
 import vscode
 import nsuts_base
 import os, json
+from md_creator import MDCreator
 
 class DB:
     def __init__(self, filename):
@@ -66,43 +68,78 @@ from vscode.context import Context
 async def on_activate():
     await ext.commands[1].func(Context(ext.ws))
 
+def decode(data):
+    return base64.b64decode(data)
+
 @ext.command()
 async def reload(ctx: vscode.Context):
     return await ctx.show(vscode.InfoMessage("Reload"))
 
-def init_workspace(user:nsuts_base.NsutsClient):
+
+def load_olymp(olymp, path):
+    if (not os.path.isdir(path)): os.mkdir(path)
+    user.select_olympiad(olymp['id'])
+    return path
+
+def load_tour(tour, path):
+    if (not os.path.isdir(path)): 
+        os.mkdir(path) 
+        user.select_tour(tour['id'])
+        if (not os.path.exists(path + '/statement.pdf')): user.download_tour_statement(path)
+    result = json.loads(load_reports(path))
+    temp = MDCreator(result)
+    temp.sort()
+    temp.create_md(path + "/results.md")
+
+    return path
+
+def load_reports(path):
+    json_text = '{"submits":['
+    reports = user.get_reports()
+    for i in reports:
+        json_text += "{"
+        json_text += f'"id" : {i["id"]},'
+        json_text += f'"task_id" : {i["task_id"]},'
+        json_text += f'"task_title" : "{i["task_title"]}",'
+        json_text += f'"compiler" : "{i["compiler"]}",'
+        json_text += f'"result_line" : "{i["result_line"]}",'
+        json_text += f'"date" : "{i["date"]}",'
+        json_text += f'"points" : {user.get_points(int(i["id"]))}'
+        json_text += "}"
+        if (reports[-1] != i): json_text += ','
+    json_text += ']}'
+
+    return json_text
+
+async def load_task(task, path):
+    if (not os.path.isdir(path)): 
+        os.mkdir(path)
+        await download_accepted(path)
+    return path
+            
+async def download_accepted(path): #TODO 
+    data = user.download_task(await choose_olymp_tour_task_by_path(path))
+    if (data != -1):
+        if (data[-1] == 'emailtester'):
+            result = decode(data[1])
+            with open(path + 'files.zip', 'wb') as f: f.write(decode(data[0]))
+        else:
+            result = ''
+            for i in data[0]:
+                result += decode(i)
+            with open(path + "main.c", 'w') as f: f.write(result)
+
+
+async def init_workspace(user:nsuts_base.NsutsClient):
     home_path = os.path.expanduser('~') + "/.nsuts"
     if (not os.path.isdir(home_path)): os.mkdir(home_path) 
     for olymp in user.get_olympiads():
-        olymp_path = home_path + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
-        if (not os.path.isdir(olymp_path)): os.mkdir(olymp_path) 
-        user.select_olympiad(olymp['id'])
+        olymp_path = load_olymp(olymp, home_path + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
         for tour in user.get_tours():
-            tour_path = olymp_path + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
-            if (not os.path.isdir(tour_path)): os.mkdir(tour_path) 
-            user.select_tour(tour['id'])
-            if (not os.path.exists(tour_path + '/statement.pdf')): user.download_tour_statement(tour_path)
-            with open(tour_path + '/reports.json', 'w') as f:
-                f.write('{"submits":[')
-                reports = user.get_reports()
-                for i in reports:
-                    f.write("{")
-                    f.write(f'"id" : {i["id"]},')
-                    f.write(f'"task_id" : {i["task_id"]},')
-                    f.write(f'"task_title" : "{i["task_title"]}",')
-                    f.write(f'"compiler" : "{i["compiler"]}",')
-                    f.write(f'"result_line" : "{i["result_line"]}",')
-                    f.write(f'"date" : "{i["date"]}"')
-                    f.write("}")
-                    if (reports[-1] != i): f.write(',') 
-                f.write(']}')
-                vscode.log(tour)
+            tour_path = load_tour(tour, olymp_path + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
             for task in user.get_tasks():
-                task_path = tour_path + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}"
-                if (not os.path.isdir(task_path)): os.mkdir(task_path)
-
-
-            
+                task_path = await load_task(task, tour_path + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
+                            
 
 @ext.command()
 async def login(ctx: vscode.Context):
@@ -131,7 +168,7 @@ async def login(ctx: vscode.Context):
     user.config['password'] = database.read('password')
     
     user.auth()
-    init_workspace(user)
+    await init_workspace(user)
     await ctx.show(vscode.InfoMessage(f'test'))
     return await ctx.env.ws.run_code('vscode.commands.executeCommand("vscode.openFolder", ' + 
                               "vscode.Uri.file('/home/deu/.nsuts')" + 
@@ -151,7 +188,32 @@ async def build_and_run(ctx: vscode.Context):
 
 @ext.command(keybind="shift+f4")
 async def submit(ctx: vscode.Context):
-    pass
+    file_path = await ctx.env.ws.run_code('vscode.window.activeTextEditor.document.uri.fsPath', thenable = False)
+    path = '/'.join(file_path.split('/')[:-1]) + '/'
+    compil = await choose_compilator(ctx, path)
+    try:
+        if (compil.index("email")):
+            vscode.log("EMAIL TESTER AAAAA")
+    except ValueError:
+        user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], open(file_path, 'r').read())
+
+async def choose_olymp_tour_task_by_path(path):
+    home_path = os.path.expanduser('~') + "/.nsuts"
+    vscode.log(path)
+    path = path.replace(home_path, '')[1:].split('/')
+    
+    user.select_olympiad(user.get_olympiad_id_by_name(path[0]))
+    user.select_tour(user.get_tour_id_by_name(path[1]))
+    vscode.log(user.get_task_id_by_name(path[-1]), path[-1])
+    return user.get_task_id_by_name(path[-1])
+
+async def choose_compilator(ctx: Context, path):
+    items = []
+    await choose_olymp_tour_task_by_path(path)
+    for i in user.get_compilators():
+        items.append(vscode.QuickPickItem(label=i['title'], detail=f"Id: {i['id']}"))
+    result = await ctx.window.show(vscode.QuickPick(items, vscode.QuickPickOptions('Choose comilator', match_on_detail=True)))
+    return result.detail
 
 @ext.command()
 async def main(ctx: vscode.Context):

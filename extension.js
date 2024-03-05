@@ -50,6 +50,12 @@ function registerCommands(context) {
     )
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("nsuts.sendTest", () =>
+        commandCallback("sendTest")
+    )
+  );
+
 }
 
 
