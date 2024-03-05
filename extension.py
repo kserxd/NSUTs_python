@@ -119,6 +119,7 @@ async def load_task(task, path):
             
 async def download_accepted(path): #TODO 
     data = user.download_task(await choose_olymp_tour_task_by_path(path))
+    vscode.log(data, path)
     if (data != -1):
         if (data[-1] == 'emailtester'):
             result = decode(data[1])
