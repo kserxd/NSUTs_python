@@ -2,14 +2,14 @@
   "name": "nsuts",
   "displayName": "NSUTs",
   "main": "./extension.js",
-	"description": "How to contribute and use configurations in VS Code",
-	"publisher": "deudeuka",
-	"private": true,
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/kserxd/NSUTs_python"
-	},
+  "description": "How to contribute and use configurations in VS Code",
+  "publisher": "deudeuka",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kserxd/NSUTs_python"
+  },
   "contributes": {
     "commands": [
       {
@@ -54,7 +54,7 @@
   "dependencies": {
     "ws": "^8.4.0"
   },
-  "version": "0.1.0",
+  "version": "0.0.1",
   "engines": {
     "vscode": "^1.58.0"
   }

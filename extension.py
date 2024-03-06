@@ -1,4 +1,5 @@
 import base64
+from pathlib import Path
 import shutil
 import zipfile
 import vscode
@@ -6,7 +7,7 @@ import nsuts_base
 import os, json
 from md_creator import MDCreator
 from vscode.context import Context
-#qsgvvvtqfzxa5mdcurswpgjqkapjdjdvuqkkt44ga5remqkhpweq
+
 class DB:
     def __init__(self, filename):
         self.filename = filename
@@ -139,7 +140,7 @@ async def download_accepted(task, path): #TODO
 
 
 async def init_workspace(user:nsuts_base.NsutsClient):
-    home_path = os.path.expanduser('~') + "/.nsuts"
+    home_path = Path.home() + "/.nsuts"
     if (not os.path.isdir(home_path)): os.mkdir(home_path) 
     for olymp in user.get_olympiads():
         olymp_path = load_olymp(olymp, home_path + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
