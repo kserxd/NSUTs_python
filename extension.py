@@ -140,7 +140,7 @@ async def download_accepted(task, path): #TODO
 
 
 async def init_workspace(user:nsuts_base.NsutsClient):
-    home_path = Path.home() + "/.nsuts"
+    home_path = os.path.expanduser("~") + "/.nsuts"
     if (not os.path.isdir(home_path)): os.mkdir(home_path) 
     for olymp in user.get_olympiads():
         olymp_path = load_olymp(olymp, home_path + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
@@ -155,19 +155,16 @@ async def login(ctx: vscode.Context, update=False):
     if (database.read('login') == "ERROR"):
         input_box = vscode.InputBox("Email")
         res = await ctx.show(input_box)
-        print(res)
         database.write('login', res)
     
     if (database.read('password') == "ERROR"):
         input_box = vscode.InputBox("Password", password=True)
         res = await ctx.show(input_box)
-        print(res)
         database.write('password', res)
 
     if (database.read('url') == "ERROR"):
         input_box = vscode.InputBox("URL")
         res = await ctx.show(input_box)
-        print(res)
         database.write('url', res)
     
     database.save()
