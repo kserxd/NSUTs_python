@@ -202,6 +202,7 @@ class NsutsClient:
             return {
                 'type': 'emailtester',
                 'content': base64.b64decode(response['data']),
+                'result': base64.b64decode(response['report'])
             }
         else:
             return b''.join([base64.b64decode(line) for line in response['text']])

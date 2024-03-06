@@ -135,6 +135,7 @@ async def download_accepted(task, path): #TODO
                 os.remove(path + '/files.zip')
             except zipfile.BadZipFile:
                 os.rename(path + '/files.zip', path + '/main.c')
+            return result
         else:
             result = ''
             for i in data[0]:
@@ -220,29 +221,58 @@ async def build_and_run(ctx: vscode.Context):
 
 @ext.command(keybind="shift+f4")
 async def submit(ctx: vscode.Context):
-    file_path = await ctx.env.ws.run_code('vscode.window.activeTextEditor.document.uri.fsPath', thenable = False)
-    path = '/'.join(file_path.split('/')[:-1]) + '/'
+    path, file_path = await get_open_file_path(ctx)
+    for i in os.listdir(path):
+        try:
+            if (i.index("_temp")):
+                os.remove(path + i)
+        except:
+            pass
     compil = await choose_compilator(ctx, path)
+    error = False
     try:
         if (compil.index("email")):
             zip_path = shutil.make_archive('/'.join(path.split('/')[:-2]) + '/main', 'zip', path)
-            user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], zip_path)
+            try:
+                user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], zip_path)
+            except:
+                await ctx.show(vscode.InfoMessage("Your submit return error. It might be caused by:\n - Empty file\n - Incorrect compilator\n - Last submit on this task is same"))
+                error = True
             os.remove(zip_path)
     except ValueError:
-        user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], open(file_path, 'r').read())
-    await ctx.show(vscode.InfoMessage(f"Task '{file_path.split('/')[-1]}' sent!"))
-    await progress(ctx, get_result, "Waiting for result")
+        try:
+            user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], open(file_path, 'r').read())
+        except:
+            error = True
+            await ctx.show(vscode.InfoMessage("Your submit return error. It might be caused by Empty file, Incorrect compilator or Last submit on this task is same"))
+    if (not error):
+        await ctx.show(vscode.InfoMessage(f"Task '{file_path.split('/')[-1]}' sent!"))
+        await progress(ctx, get_result, "Waiting for result")
+
+async def get_open_file_path(ctx):
+    file_path = await ctx.env.ws.run_code('vscode.window.activeTextEditor.document.uri.fsPath', thenable = False)
+    return ['/'.join(file_path.split('/')[:-1]) + '/', file_path]
 
 async def get_result(ctx, temp = True):
+    path, file_path = await get_open_file_path(ctx)
     result = user.get_result()
     while (result == None):
         result = user.get_result()
-    await ctx.show(vscode.InfoMessage("Accepted!" if result[-1] == "A" else f"Error on test {len(result)}"))
+    text = ''
+    if result[-1] == "A":
+        text = "Accepted!"
+    else:
+        text = f"Error on test {len(result)}"
+        with open(path + 'result_temp.txt', 'w') as f: 
+            data = user.get_solution_source(user.get_my_last_submit_id())
+            if (type(data) == dict):
+                f.write(data['result'].decode())
+    # get_solution_source
+    await ctx.show(vscode.InfoMessage(text))
 
 async def choose_olymp_tour_task_by_path(path):
     home_path = os.path.expanduser('~') + "/.nsuts"
     path = path.replace(home_path, '')[1:].split('/')
-    
     user.select_olympiad(user.get_olympiad_id_by_name(path[0]))
     user.select_tour(user.get_tour_id_by_name(path[1]))
     return user.get_task_id_by_name(path[2])
