@@ -5,9 +5,7 @@ from nsuts_base import NsutsClient
 
 user = NsutsClient()
 
-user.config['nsuts'] = 'https://fresh.nsuts.ru/nsuts-new'
-user.config['email'] = 'a.dunaev@g.nsu.ru'
-user.config['password'] = '6_KeSaR_6'
+
 
 user.auth()
 
