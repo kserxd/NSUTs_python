@@ -34,7 +34,7 @@ class NsutsClient:
         return response
 
     def __request_post__(self, path, data, files=None, is_json = True):
-        # type: (str, Dict[str, Any], bool) -> Any
+        # type: (str, Dict[str, Any], Dict[str, Any], bool) -> Any
         if path[0] != '/':
             path = '/' + path
         url = self.config['nsuts'] + path
