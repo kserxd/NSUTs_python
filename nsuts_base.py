@@ -33,7 +33,7 @@ class NsutsClient:
         response.raise_for_status()
         return response
 
-    def __request_post__(self, path, data, is_json = True):
+    def __request_post__(self, path, data, files=None, is_json = True):
         # type: (str, Dict[str, Any], bool) -> Any
         if path[0] != '/':
             path = '/' + path
@@ -42,7 +42,7 @@ class NsutsClient:
         xcookies = self.__get_cookies__() if 'session_id' in self.config else None
         xdata = None if is_json else data
         xjson = data if is_json else None
-        response = requests.post(url, data = xdata, json = xjson, cookies = xcookies, verify = self.__do_verify__())
+        response = requests.post(url, data = xdata, files=files, json = xjson, cookies = xcookies, verify = self.__do_verify__())
 
         response.raise_for_status()
         return response
@@ -126,6 +126,9 @@ class NsutsClient:
                 return int(i['id'])
         return -1
 
+    def get_compilators(self):
+        return self.__request_get__('/api/submit/submit_info').json()['langs']
+
     def get_points(self, ids):
         return self.__request_get__('/api/plugins/students/submit_points?id=' + str(ids)).json()['points']
 
@@ -155,15 +158,19 @@ class NsutsClient:
 
     def download_task(self, ids):
         if (ids != -1):
-            submit_id = [i['id'] for i in self.get_reports() if (i['result_line'][-1] == "A" and i['task_id'] == ids)]
+            data = {i['task_id']: i['id'] for i in self.get_reports() if i['result_line'][-1] == "A"}
+            submit_id = ''
+            try:
+                submit_id = data[str(ids)]
+            except:
+                pass
             if (submit_id):
-                submit_id = submit_id[0]
                 response = self.__request_get__(f"/api/submit/get_source?id={submit_id}").json()
                 if (response['compiler'] == "emailtester"):
                     return [response['data'], response['report'], response['compiler'] ]
                 else:
                     return [response['text'], response['compiler']]
-        return -1
+        return ''
     
 
     def get_reports(self):
@@ -201,12 +208,14 @@ class NsutsClient:
         data = {
             'langId': compiler_name,
             'taskId': task_id,
-            'sourceText': source_text
+            'sourceText': ''
         }
-        response = self.__request_post__('/api/submit/do_submit', data, is_json = False)
-    
-    def get_compilators(self):
-        response = self.__request_get__('/api/submit/submit_info').json()['langs']
+        files = {"sourceFile": ""}
+        if (compiler_name == 'emailtester'):
+            files['sourceFile'] = open(source_text, 'rb')
+        else:
+            data['sourceText'] = source_text
+        response = self.__request_post__('/api/submit/do_submit', data, files, is_json = False)
         return response
 
     def get_my_last_submit_id(self):

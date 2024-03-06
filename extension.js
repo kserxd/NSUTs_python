@@ -45,14 +45,8 @@ function registerCommands(context) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("nsuts.main", () =>
-        commandCallback("main")
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("nsuts.sendTest", () =>
-        commandCallback("sendTest")
+    vscode.commands.registerCommand("nsuts.start", () =>
+        commandCallback("start")
     )
   );
 

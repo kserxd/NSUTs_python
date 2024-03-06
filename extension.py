@@ -1,8 +1,11 @@
 import base64
+import shutil
+import zipfile
 import vscode
 import nsuts_base
 import os, json
 from md_creator import MDCreator
+from vscode.context import Context
 
 class DB:
     def __init__(self, filename):
@@ -59,14 +62,12 @@ def compile_c_files(directory):
     for c_file in c_files:
         filename = os.path.join(directory, c_file)
         command += f'"{filename}" '
-    vscode.log(command)
     os.system(command)
     return os.path.join(directory, 'main')
 
-from vscode.context import Context
 @ext.event
 async def on_activate():
-    await ext.commands[1].func(Context(ext.ws))
+    vscode.log('Started!')
 
 def decode(data):
     return base64.b64decode(data)
@@ -84,8 +85,8 @@ def load_olymp(olymp, path):
 def load_tour(tour, path):
     if (not os.path.isdir(path)): 
         os.mkdir(path) 
-        user.select_tour(tour['id'])
-        if (not os.path.exists(path + '/statement.pdf')): user.download_tour_statement(path)
+    user.select_tour(tour['id'])
+    if (not os.path.exists(path + '/statement.pdf')): user.download_tour_statement(path)
     result = json.loads(load_reports(path))
     temp = MDCreator(result)
     temp.sort()
@@ -114,21 +115,27 @@ def load_reports(path):
 async def load_task(task, path):
     if (not os.path.isdir(path)): 
         os.mkdir(path)
-        await download_accepted(path)
+    await download_accepted(task, path)
     return path
             
-async def download_accepted(path): #TODO 
-    data = user.download_task(await choose_olymp_tour_task_by_path(path))
-    vscode.log(data, path)
-    if (data != -1):
+async def download_accepted(task, path): #TODO 
+    data = user.get_task_id_by_name(task['title'].replace(' ', '_').replace('(', '').replace(')', ''))
+    data = user.download_task(data)
+    if (data):
         if (data[-1] == 'emailtester'):
             result = decode(data[1])
-            with open(path + 'files.zip', 'wb') as f: f.write(decode(data[0]))
+            with open(path + '/files.zip', 'wb') as f: f.write(decode(data[0]))
+            try:
+                with zipfile.ZipFile(path + '/files.zip', 'r') as zip_ref:
+                    zip_ref.extractall(path)
+                os.remove(path + '/files.zip')
+            except zipfile.BadZipFile:
+                os.rename(path + '/files.zip', path + '/main.c')
         else:
             result = ''
             for i in data[0]:
-                result += decode(i)
-            with open(path + "main.c", 'w') as f: f.write(result)
+                result += decode(i).decode()
+            with open(path + "/main.c", 'w') as f: f.write(result)
 
 
 async def init_workspace(user:nsuts_base.NsutsClient):
@@ -143,7 +150,7 @@ async def init_workspace(user:nsuts_base.NsutsClient):
                             
 
 @ext.command()
-async def login(ctx: vscode.Context):
+async def login(ctx: vscode.Context, update=False):
     if (database.read('login') == "ERROR"):
         input_box = vscode.InputBox("Email")
         res = await ctx.show(input_box)
@@ -169,8 +176,9 @@ async def login(ctx: vscode.Context):
     user.config['password'] = database.read('password')
     
     user.auth()
-    await init_workspace(user)
-    await ctx.show(vscode.InfoMessage(f'test'))
+    if (update):
+        await init_workspace(user)
+    await ctx.show(vscode.InfoMessage(f'Logged into {user.config["email"]}'))
     return await ctx.env.ws.run_code('vscode.commands.executeCommand("vscode.openFolder", ' + 
                               "vscode.Uri.file('/home/deu/.nsuts')" + 
                               ')')
@@ -194,19 +202,20 @@ async def submit(ctx: vscode.Context):
     compil = await choose_compilator(ctx, path)
     try:
         if (compil.index("email")):
-            vscode.log("EMAIL TESTER AAAAA")
+            zip_path = shutil.make_archive('/'.join(path.split('/')[:-2]) + '/main', 'zip', path)
+            user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], zip_path)
+            os.remove(zip_path)
     except ValueError:
         user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], open(file_path, 'r').read())
+    await ctx.show(vscode.InfoMessage(f"Task '{file_path.split('/')[-1]}' sent!"))
 
 async def choose_olymp_tour_task_by_path(path):
     home_path = os.path.expanduser('~') + "/.nsuts"
-    vscode.log(path)
     path = path.replace(home_path, '')[1:].split('/')
     
     user.select_olympiad(user.get_olympiad_id_by_name(path[0]))
     user.select_tour(user.get_tour_id_by_name(path[1]))
-    vscode.log(user.get_task_id_by_name(path[-1]), path[-1])
-    return user.get_task_id_by_name(path[-1])
+    return user.get_task_id_by_name(path[2])
 
 async def choose_compilator(ctx: Context, path):
     items = []
@@ -216,8 +225,16 @@ async def choose_compilator(ctx: Context, path):
     result = await ctx.window.show(vscode.QuickPick(items, vscode.QuickPickOptions('Choose comilator', match_on_detail=True)))
     return result.detail
 
+async def progress(ctx: vscode.Context, command):
+    # Show a progress bar in the status bar
+    async with ctx.window.progress("Initialization of NSUTs workspace. It's might take a while", vscode.ProgressLocation.Notification) as p:
+        res = await command(ctx, True)
+    await ctx.window.show(vscode.InfoMessage("Completed!"))
+
+
+
 @ext.command()
-async def main(ctx: vscode.Context):
-    return 0
+async def start(ctx: vscode.Context):
+    return await progress(ctx, ext.commands[1].func)
 
 ext.run()

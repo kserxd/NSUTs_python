@@ -21,12 +21,8 @@
         "title": "Submit"
       },
       {
-        "command": "nsuts.main",
-        "title": "Main"
-      },
-      {
-        "command": "nsuts.sendTest",
-        "title": "Send Test"
+        "command": "nsuts.start",
+        "title": "Start"
       }
     ],
     "keybindings": [
@@ -45,8 +41,7 @@
     "onCommand:nsuts.login",
     "onCommand:nsuts.buildAndRun",
     "onCommand:nsuts.submit",
-    "onCommand:nsuts.main",
-    "onCommand:nsuts.sendTest"
+    "onCommand:nsuts.start"
   ],
   "dependencies": {
     "ws": "^8.4.0"

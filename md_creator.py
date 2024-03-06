@@ -20,9 +20,9 @@ class MDCreator:
     def create_md(self, path):
         with open(path, 'w') as f:
             data = '''
-| Number |  Id | Name | Compiler | Result | Points | Code | 
-| ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+| Number |  Id | Task id | Name | Compiler | Result | Points | Code | 
+| ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
 '''
             for i in self.unique():
-                data += f'| {int(i["task_title"].split(".")[0].replace("[ET]", ""))} | {i["id"]} | {i["task_title"]} | {i["compiler"]} | {"Accepted!" if i["result_line"][-1] == "A" else "Error"} | {i["points"]} | {"```None```"} |\n'
+                data += f'| {int(i["task_title"].split(".")[0].replace("[ET]", ""))} | {i["id"]} | {i["task_id"]} | {i["task_title"]} | {i["compiler"]} | {"Accepted!" if i["result_line"][-1] == "A" else "Error"} | {i["points"]} | {"```None```"} |\n'
             f.write(data)
