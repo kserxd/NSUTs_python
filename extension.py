@@ -30,6 +30,9 @@ class DB:
                 return "ERROR"
         else:
             return self.data
+    
+    def remove(self, key):
+        self.data.pop(key)
 
     def save(self):
         json.dump(self.data, open(self.filename, "w"))
@@ -148,32 +151,54 @@ async def init_workspace(user:nsuts_base.NsutsClient):
             tour_path = load_tour(tour, olymp_path + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
             for task in user.get_tasks():
                 task_path = await load_task(task, tour_path + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}")
-                            
 
-@ext.command()
-async def login(ctx: vscode.Context, update=False):
-    if (database.read('login') == "ERROR"):
-        input_box = vscode.InputBox("Email")
+async def user_info(ctx, change=False):
+    if (change):
+        input_box = vscode.InputBox("Email", place_holder="example@test.test")
         res = await ctx.show(input_box)
         database.write('login', res)
-    
-    if (database.read('password') == "ERROR"):
         input_box = vscode.InputBox("Password", password=True)
         res = await ctx.show(input_box)
         database.write('password', res)
-
-    if (database.read('url') == "ERROR"):
-        input_box = vscode.InputBox("URL")
+        input_box = vscode.InputBox("URL", place_holder="https://fresh.nsuts.ru/nsuts-new")
         res = await ctx.show(input_box)
+        if (res[-1] == '/'): res[:-1]
         database.write('url', res)
+    else:
+        if (database.read('login') == "ERROR"):
+            input_box = vscode.InputBox("Email", place_holder="example@test.test")
+            res = await ctx.show(input_box)
+            database.write('login', res)
+        
+        if (database.read('password') == "ERROR"):
+            input_box = vscode.InputBox("Password", password=True)
+            res = await ctx.show(input_box)
+            database.write('password', res)
+
+        if (database.read('url') == "ERROR"):
+            input_box = vscode.InputBox("URL", place_holder="https://fresh.nsuts.ru/nsuts-new")
+            res = await ctx.show(input_box)
+            if (res[-1] == '/'): res[:-1]
+            database.write('url', res)
     
     database.save()
 
     user.config['nsuts'] = database.read('url')
     user.config['email'] = database.read('login')
-    user.config['password'] = database.read('password')
-    
-    user.auth()
+    user.config['password'] = database.read('password')                            
+
+@ext.command()
+async def login(ctx: vscode.Context, update=False):
+    await user_info(ctx)
+    try:
+        user.auth()
+    except:
+        await ctx.show(vscode.ErrorMessage("Incorrect login, password or url!\nTry again!"))
+        database.remove('url')
+        database.remove('login')
+        database.remove('password')
+        database.save()
+        await login(ctx, update)
     if (update):
         await init_workspace(user)
     await ctx.show(vscode.InfoMessage(f'Logged into {user.config["email"]}'))
@@ -206,6 +231,13 @@ async def submit(ctx: vscode.Context):
     except ValueError:
         user.submit_solution(await choose_olymp_tour_task_by_path(path), compil.split()[-1], open(file_path, 'r').read())
     await ctx.show(vscode.InfoMessage(f"Task '{file_path.split('/')[-1]}' sent!"))
+    await progress(ctx, get_result, "Waiting for result")
+
+async def get_result(ctx, temp = True):
+    result = user.get_result()
+    while (result == None):
+        result = user.get_result()
+    await ctx.show(vscode.InfoMessage("Accepted!" if result[-1] == "A" else f"Error on test {len(result)}"))
 
 async def choose_olymp_tour_task_by_path(path):
     home_path = os.path.expanduser('~') + "/.nsuts"
@@ -223,9 +255,9 @@ async def choose_compilator(ctx: Context, path):
     result = await ctx.window.show(vscode.QuickPick(items, vscode.QuickPickOptions('Choose comilator', match_on_detail=True)))
     return result.detail
 
-async def progress(ctx: vscode.Context, command):
+async def progress(ctx: vscode.Context, command, text):
     # Show a progress bar in the status bar
-    async with ctx.window.progress("Initialization of NSUTs workspace. It's might take a while", vscode.ProgressLocation.Notification) as p:
+    async with ctx.window.progress(text, vscode.ProgressLocation.Notification) as p:
         res = await command(ctx, True)
     await ctx.window.show(vscode.InfoMessage("Completed!"))
 
@@ -233,6 +265,6 @@ async def progress(ctx: vscode.Context, command):
 
 @ext.command()
 async def start(ctx: vscode.Context):
-    return await progress(ctx, ext.commands[1].func)
+    return await progress(ctx, ext.commands[1].func, "Initialization of NSUTs workspace. It's might take a while")
 
 ext.run()

@@ -79,6 +79,9 @@ class NsutsClient:
 
         assert self.__get_state__()['session_id'] == self.config['session_id'], "Session ID not saved"
 
+    def get_result(self):
+        return self.get_my_last_submit()['result_line']
+
     def get_olympiads(self):
         response = self.__request_get__('/api/olympiads/list').json()['registeredTo'];
         return response
@@ -225,6 +228,14 @@ class NsutsClient:
             return None
         submits = sorted(submits, key = lambda s: s['date'])
         return int(submits[-1]['id'])
+    
+    def get_my_last_submit(self):
+        # type: () -> Optional[int]
+        submits = self.get_my_submits_status()
+        if len(submits) == 0:
+            return None
+        submits = sorted(submits, key = lambda s: s['date'])
+        return submits[-1]
 
     def get_my_submits_status(self):
         # type: () -> Any
