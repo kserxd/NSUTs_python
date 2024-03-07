@@ -93,7 +93,7 @@ async def submit(ctx: vscode.Context):
             )
             try:
                 user.submit_solution(
-                    await choose_olymp_tour_task_by_path(path),
+                    choose_olymp_tour_task_by_path(path),
                     compil.split()[-1],
                     zip_path,
                 )
@@ -108,7 +108,7 @@ async def submit(ctx: vscode.Context):
     except ValueError:
         try:
             user.submit_solution(
-                await choose_olymp_tour_task_by_path(path),
+                choose_olymp_tour_task_by_path(path),
                 compil.split()[-1],
                 open(file_path, "r").read(),
             )
