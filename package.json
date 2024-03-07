@@ -13,6 +13,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "nsuts.start",
+        "title": "Start"
+      },
+      {
         "command": "nsuts.reload",
         "title": "Reload"
       },
@@ -27,10 +31,6 @@
       {
         "command": "nsuts.submit",
         "title": "Submit"
-      },
-      {
-        "command": "nsuts.start",
-        "title": "Start"
       }
     ],
     "keybindings": [
@@ -45,11 +45,11 @@
     ]
   },
   "activationEvents": [
+    "onCommand:nsuts.start",
     "onCommand:nsuts.reload",
     "onCommand:nsuts.login",
     "onCommand:nsuts.buildAndRun",
-    "onCommand:nsuts.submit",
-    "onCommand:nsuts.start"
+    "onCommand:nsuts.submit"
   ],
   "dependencies": {
     "ws": "^8.4.0"

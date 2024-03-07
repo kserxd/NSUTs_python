@@ -21,6 +21,12 @@ function commandCallback(command) {
 function registerCommands(context) {
 	
   context.subscriptions.push(
+    vscode.commands.registerCommand("nsuts.start", () =>
+        commandCallback("start")
+    )
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("nsuts.reload", () =>
         commandCallback("reload")
     )
@@ -41,12 +47,6 @@ function registerCommands(context) {
   context.subscriptions.push(
     vscode.commands.registerCommand("nsuts.submit", () =>
         commandCallback("submit")
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("nsuts.start", () =>
-        commandCallback("start")
     )
   );
 
