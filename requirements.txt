@@ -1,2 +1,1 @@
-Requests==2.31.0
 vscode.py==2.0.0b2
