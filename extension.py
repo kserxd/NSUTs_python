@@ -65,16 +65,7 @@ async def login(ctx: vscode.Context, update=False):
 # text
 @ext.command(keybind="shift+f5")
 async def build_and_run(ctx: vscode.Context):  # TODO add handler for other languages
-    path = (
-        "/".join(
-            (
-                await ctx.env.ws.run_code(
-                    "vscode.window.activeTextEditor.document.uri.fsPath", thenable=False
-                )
-            ).split("/")[:-1]
-        )
-        + "/"
-    )
+    file_path, path = await get_open_file_path(ctx)
     clear_executable(os.path.join(path, "main"))
     result = compile_c_files(path)
     res = await ctx.window.active_terminal
@@ -83,7 +74,8 @@ async def build_and_run(ctx: vscode.Context):  # TODO add handler for other lang
 
 @ext.command(keybind="shift+f4")
 async def submit(ctx: vscode.Context):
-    if not config:
+    try: user.config['session_id']
+    except:
         await login(ctx)
     path, file_path = await get_open_file_path(ctx)
     for i in os.listdir(path):
@@ -108,7 +100,7 @@ async def submit(ctx: vscode.Context):
             except:
                 await ctx.show(
                     vscode.ErrorMessage(
-                        "Your submit return error. It might be caused by:\n - Empty file\n - Incorrect compilator\n - Last submit on this task is same"
+                        "Your submit return error. It might be caused by: - Empty file - Incorrect compilator - Last submit on this task is same"
                     )
                 )
                 error = True
@@ -134,7 +126,7 @@ async def submit(ctx: vscode.Context):
 
 async def choose_compilator(ctx: Context, path):
     items = []
-    await choose_olymp_tour_task_by_path(path)
+    choose_olymp_tour_task_by_path(path)
     for i in user.get_compilators():
         items.append(vscode.QuickPickItem(label=i["title"], detail=f"Id: {i['id']}"))
     result = await ctx.window.show(
