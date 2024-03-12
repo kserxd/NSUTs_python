@@ -25,6 +25,10 @@ async def on_activate():
 
 @ext.command()
 async def start(ctx: vscode.Context):
+    try:
+        os.mkdir(home_path)
+    except:
+        pass
     return await progress(
         ctx,
         ext.commands[2].func,
@@ -219,7 +223,7 @@ async def user_info(ctx: vscode.Context, change=False):
     database.save()
     
     if database.read("login") != "ERROR":
-        home_path += database.read("login").split('@')[0] 
+        home_path += database.read("login").split('@')[0].replace('.', "_")
     
     
     nsuts = database.read("url")
@@ -231,7 +235,7 @@ async def user_info(ctx: vscode.Context, change=False):
         database.write('url', tnsuts)
         database.write('login', temail)
         database.write('password', tpassword)
-        home_path += database.read("login").split('@')[0] 
+        home_path += database.read("login").split('@')[0].replace(".", "_")
         database.save()
     else:
         user.config["nsuts"] = nsuts
