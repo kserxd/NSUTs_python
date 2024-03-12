@@ -25,6 +25,10 @@
         "title": "Login"
       },
       {
+        "command": "nsuts.change",
+        "title": "Change"
+      },
+      {
         "command": "nsuts.buildAndRun",
         "title": "Build And Run"
       },
@@ -48,6 +52,7 @@
     "onCommand:nsuts.start",
     "onCommand:nsuts.reload",
     "onCommand:nsuts.login",
+    "onCommand:nsuts.change",
     "onCommand:nsuts.buildAndRun",
     "onCommand:nsuts.submit"
   ],

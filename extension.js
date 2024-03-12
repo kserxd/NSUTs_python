@@ -39,6 +39,12 @@ function registerCommands(context) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("nsuts.change", () =>
+        commandCallback("change")
+    )
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("nsuts.buildAndRun", () =>
         commandCallback("buildAndRun")
     )

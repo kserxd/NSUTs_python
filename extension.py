@@ -14,9 +14,9 @@ user = NsutsClient()
 
 config = {}
 
-database = DB("login.json")
+database = DB(".login.json")
 
-home_path = os.path.expanduser("~") + "/.nsuts"
+home_path = os.path.expanduser("~") + "/.nsuts/"
 
 
 @ext.event
@@ -59,6 +59,11 @@ async def login(ctx: vscode.Context, update=False):
         + f"vscode.Uri.file('{home_path}')"
         + ")"
     )
+
+@ext.command()
+async def change(ctx: Context):
+    path = '/'.join(home_path.split('/')[:-2])
+    os.remove(path + '/' + database.filename)
 
 # python
 # c
@@ -168,25 +173,27 @@ async def get_open_file_path(ctx: vscode.Context):
     return ["/".join(file_path.split("/")[:-1]) + "/", file_path]
 
 async def user_info(ctx: vscode.Context, change=False):
+    global home_path
     if change:
         input_box = vscode.InputBox("Email", place_holder="example@test.test")
         res = await ctx.show(input_box)
+        home_path += res.split("@")[1];
         database.write("login", res)
         input_box = vscode.InputBox("Password", password=True)
         res = await ctx.show(input_box)
         database.write("password", res)
-        input_box = vscode.InputBox(
-            "URL", place_holder="https://fresh.nsuts.ru/nsuts-new"
-        )
-        res = await ctx.show(input_box)
-        if res[-1] == "/":
-            res[:-1]
+        items = [vscode.QuickPickItem("Fresh NSUTs", detail="https://fresh.nsuts.ru/nsuts-new"),
+                 vscode.QuickPickItem("Olympics NSUTs", detail="https://olympic.nsu.ru/nsuts-new")]
+        input_box = vscode.QuickPick(items, vscode.QuickPickOptions("Choose NSUTs", match_on_detail=True))
+        res = await ctx.window.show(input_box)
+        res = res.detail
         database.write("url", res)
     else:
         if database.read("login") == "ERROR":
             input_box = vscode.InputBox("Email", place_holder="example@test.test")
             res = await ctx.show(input_box)
             database.write("login", res)
+            home_path += res.split("@")[1];
 
         if database.read("password") == "ERROR":
             input_box = vscode.InputBox("Password", password=True)
@@ -194,14 +201,12 @@ async def user_info(ctx: vscode.Context, change=False):
             database.write("password", res)
 
         if database.read("url") == "ERROR":
-            input_box = vscode.InputBox(
-                "URL", place_holder="https://fresh.nsuts.ru/nsuts-new"
-            )
-            res = await ctx.show(input_box)
-            if res[-1] == "/":
-                res[:-1]
+            items = [vscode.QuickPickItem("Fresh NSUTs", detail="https://fresh.nsuts.ru/nsuts-new"),
+                     vscode.QuickPickItem("Olympics NSUTs", detail="https://olympic.nsu.ru/nsuts-new")]
+            input_box = vscode.QuickPick(items, vscode.QuickPickOptions("Choose NSUTs", match_on_detail=True))
+            res = await ctx.window.show(input_box)
+            res = res.detail
             database.write("url", res)
-
     database.save()
 
     user.config["nsuts"] = database.read("url")
@@ -340,7 +345,6 @@ def download_accepted(task, path):
 
 
 def choose_olymp_tour_task_by_path(path):
-    home_path = os.path.expanduser("~") + "/.nsuts"
     path = path.replace(home_path, "")[1:].split("/")
     user.select_olympiad(user.get_olympiad_id_by_name(path[0]))
     user.select_tour(user.get_tour_id_by_name(path[1]))
