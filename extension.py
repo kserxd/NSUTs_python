@@ -39,7 +39,10 @@ async def reload(ctx: vscode.Context):
 
 @ext.command()
 async def login(ctx: vscode.Context, update=False):
+    global home_path
+    
     await user_info(ctx)
+    home_path += database.read("login").split("@")[0]
     try:
         user.auth()
     except:
@@ -62,8 +65,16 @@ async def login(ctx: vscode.Context, update=False):
 
 @ext.command()
 async def change(ctx: Context):
+    global user
+    global home_path
+    vscode.log(home_path)
     path = '/'.join(home_path.split('/')[:-2])
     os.remove(path + '/' + database.filename)
+    home_path = os.path.expanduser("~") + "/.nsuts/"
+    config.clear()
+    user = NsutsClient()
+    await user_info(ctx, True)
+    await init_workspace(ctx)
 
 # python
 # c
@@ -177,7 +188,7 @@ async def user_info(ctx: vscode.Context, change=False):
     if change:
         input_box = vscode.InputBox("Email", place_holder="example@test.test")
         res = await ctx.show(input_box)
-        home_path += res.split("@")[1];
+        home_path += res.split("@")[0];
         database.write("login", res)
         input_box = vscode.InputBox("Password", password=True)
         res = await ctx.show(input_box)
@@ -193,7 +204,7 @@ async def user_info(ctx: vscode.Context, change=False):
             input_box = vscode.InputBox("Email", place_holder="example@test.test")
             res = await ctx.show(input_box)
             database.write("login", res)
-            home_path += res.split("@")[1];
+            home_path += res.split("@")[0];
 
         if database.read("password") == "ERROR":
             input_box = vscode.InputBox("Password", password=True)
