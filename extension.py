@@ -39,10 +39,7 @@ async def reload(ctx: vscode.Context):
 
 @ext.command()
 async def login(ctx: vscode.Context, update=False):
-    global home_path
-    
     await user_info(ctx)
-    home_path += database.read("login").split("@")[0]
     try:
         user.auth()
     except:
@@ -66,12 +63,10 @@ async def login(ctx: vscode.Context, update=False):
 @ext.command()
 async def change(ctx: Context):
     global user
-    global home_path
-    vscode.log(home_path)
+    if (user.config == {}):
+        return await ctx.show(vscode.InfoMessage("At first run 'Start'!"))
     path = '/'.join(home_path.split('/')[:-2])
     os.remove(path + '/' + database.filename)
-    home_path = os.path.expanduser("~") + "/.nsuts/"
-    config.clear()
     user = NsutsClient()
     await user_info(ctx, True)
     await init_workspace(ctx)
@@ -185,10 +180,13 @@ async def get_open_file_path(ctx: vscode.Context):
 
 async def user_info(ctx: vscode.Context, change=False):
     global home_path
+    home_path = os.path.expanduser("~") + "/.nsuts/"
+    tnsuts = database.read("url")
+    temail = database.read("login")
+    tpassword = database.read("password")
     if change:
         input_box = vscode.InputBox("Email", place_holder="example@test.test")
         res = await ctx.show(input_box)
-        home_path += res.split("@")[0];
         database.write("login", res)
         input_box = vscode.InputBox("Password", password=True)
         res = await ctx.show(input_box)
@@ -219,10 +217,27 @@ async def user_info(ctx: vscode.Context, change=False):
             res = res.detail
             database.write("url", res)
     database.save()
-
-    user.config["nsuts"] = database.read("url")
-    user.config["email"] = database.read("login")
-    user.config["password"] = database.read("password")
+    
+    if database.read("login") != "ERROR":
+        home_path += database.read("login").split('@')[0] 
+    
+    
+    nsuts = database.read("url")
+    email = database.read("login")
+    password = database.read("password")
+    
+    
+    if (nsuts == '' or email == '' or password == ''):
+        database.write('url', tnsuts)
+        database.write('login', temail)
+        database.write('password', tpassword)
+        home_path += database.read("login").split('@')[0] 
+        database.save()
+    else:
+        user.config["nsuts"] = nsuts
+        user.config["email"] = email
+        user.config["password"] = password
+    
 
 
 async def init_workspace(ctx: Context):
