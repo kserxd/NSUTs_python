@@ -16,6 +16,8 @@ config = {}
 
 database = DB("login.json")
 
+home_path = os.path.expanduser("~") + "/.nsuts"
+
 
 @ext.event
 async def on_activate():
@@ -50,11 +52,11 @@ async def login(ctx: vscode.Context, update=False):
         database.save()
         await login(ctx, update)
     if update:
-        init_workspace()
+        await init_workspace(ctx)
     await ctx.show(vscode.InfoMessage(f'Logged into {user.config["email"]}'))
     return await ctx.env.ws.run_code(
         'vscode.commands.executeCommand("vscode.openFolder", '
-        + "vscode.Uri.file('/home/deu/.nsuts')"
+        + f"vscode.Uri.file('{home_path}')"
         + ")"
     )
 
@@ -66,7 +68,6 @@ async def login(ctx: vscode.Context, update=False):
 @ext.command(keybind="shift+f5")
 async def build_and_run(ctx: vscode.Context):  # TODO add handler for other languages
     file_path, path = await get_open_file_path(ctx)
-    clear_executable(os.path.join(path, "main"))
     result = compile_c_files(path)
     res = await ctx.window.active_terminal
     await res.send_text(f"clear && {result}")
@@ -152,10 +153,11 @@ async def get_result(ctx: vscode.Context, temp=True):
         text = "Accepted!"
     else:
         text = f"Error on test {len(result)}"
-        with open(path + "result_temp.txt", "w") as f:
-            data = user.get_solution_source(user.get_my_last_submit_id())
-            if type(data) == dict:
-                f.write(data["result"].decode())
+        if temp:
+            with open(path + "result_temp.txt", "w") as f:
+                data = user.get_solution_source(user.get_my_last_submit_id())
+                if type(data) == dict:
+                    f.write(data["result"].decode())
     # get_solution_source
     await ctx.show(vscode.InfoMessage(text))
 
@@ -207,6 +209,105 @@ async def user_info(ctx: vscode.Context, change=False):
     user.config["password"] = database.read("password")
 
 
+async def init_workspace(ctx: Context):
+    if not os.path.isdir(home_path):
+        os.mkdir(home_path)
+    await olymp_handler(ctx)
+
+async def olymp_handler(ctx: Context):
+    items = []
+    All = False;
+    choose_list = user.get_olympiads() + [{'title': "FULL INITIALIZATION", "id": "full"}]
+    for olymp in choose_list:
+        items.append(vscode.QuickPickItem(olymp['title'], detail=f'Id: {olymp["id"]}'))
+    result = await ctx.window.show(vscode.QuickPick(items, vscode.QuickPickOptions("Choose olympiad", match_on_detail=True)))
+    ids = result.detail
+    olymp: dict;
+    if ids == 'Id: full':
+        All = True;
+    else:
+        for i in items:
+            if i.detail == ids:
+                olymp = choose_list[items.index(i)]
+                break
+    if All:
+        for olymp in choose_list[:-1]:
+            olymp_path = load_olymp(
+                olymp,
+                home_path
+                + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+            )
+            await tour_handler(ctx, olymp_path)
+    else:
+        olymp_path = load_olymp(
+            olymp,
+            home_path
+            + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+        )
+        await tour_handler(ctx, olymp_path)
+
+async def tour_handler(ctx: Context, olymp_path):
+    items = []
+    All = False;
+    choose_list = user.get_tours() + [{'title': "FULL INITIALIZATION", "id": "full"}]
+    for tour in choose_list:
+        items.append(vscode.QuickPickItem(tour['title'], detail=f'Id: {tour["id"]}'))
+    result = await ctx.window.show(vscode.QuickPick(items, vscode.QuickPickOptions("Choose tour", match_on_detail=True)))
+    ids = result.detail
+    tour: dict;
+    if ids == 'Id: full':
+        All = True;
+    else:
+        for i in items:
+            if i.detail == ids:
+                tour = choose_list[items.index(i)]
+                break
+    if All:
+        for tour in choose_list[:-1]:
+            tour_path = load_tour(
+                tour,
+                olymp_path
+                + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+            )
+            for task in user.get_tasks():
+                task_path = load_task(
+                    task,
+                    tour_path
+                    + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+                )  
+    else:
+        tour_path = load_tour(
+            tour,
+            olymp_path
+            + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+        )
+        for task in user.get_tasks():
+            task_path = load_task(
+                task,
+                tour_path
+                + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
+            )  
+
+
+def load_olymp(olymp, path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    user.select_olympiad(olymp["id"])
+    return path
+
+def load_tour(tour, path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    user.select_tour(tour["id"])
+    if not os.path.exists(path + "/statement.pdf"):
+        user.download_tour_statement(path)
+    result = json.loads(load_reports(path))
+    temp = MDCreator(result)
+    temp.sort()
+    temp.create_md(path + "/results.md")
+
+    return path
+
 def load_task(task, path):
     if not os.path.isdir(path):
         os.mkdir(path)
@@ -236,49 +337,6 @@ def download_accepted(task, path):
                 result += decode(i).decode()
             with open(path + "/main.c", "w") as f:
                 f.write(result)
-
-
-def init_workspace():
-    home_path = os.path.expanduser("~") + "/.nsuts"
-    if not os.path.isdir(home_path):
-        os.mkdir(home_path)
-    for olymp in user.get_olympiads():
-        olymp_path = load_olymp(
-            olymp,
-            home_path
-            + f"/{olymp['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
-        )
-        for tour in user.get_tours():
-            tour_path = load_tour(
-                tour,
-                olymp_path
-                + f"/{tour['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
-            )
-            for task in user.get_tasks():
-                task_path = load_task(
-                    task,
-                    tour_path
-                    + f"/{task['title'].replace(' ', '_').replace('(', '').replace(')', '')}",
-                )
-
-def load_olymp(olymp, path):
-    if not os.path.isdir(path):
-        os.mkdir(path)
-    user.select_olympiad(olymp["id"])
-    return path
-
-def load_tour(tour, path):
-    if not os.path.isdir(path):
-        os.mkdir(path)
-    user.select_tour(tour["id"])
-    if not os.path.exists(path + "/statement.pdf"):
-        user.download_tour_statement(path)
-    result = json.loads(load_reports(path))
-    temp = MDCreator(result)
-    temp.sort()
-    temp.create_md(path + "/results.md")
-
-    return path
 
 
 def choose_olymp_tour_task_by_path(path):
