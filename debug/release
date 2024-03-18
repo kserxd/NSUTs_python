@@ -1,0 +1,5 @@
+pyinstaller --noconfirm --onefile --console --add-data "/home/deu/nsuts-python/debug/tools:tools/" --add-data "/home/deu/nsuts-python/debug/venv:venv/" --add-data "/home/deu/nsuts-python/debug/nsuts_base.py:." --paths "/home/deu/nsuts-python/debug/venv/lib/python3.10/site-packages"  "/home/deu/nsuts-python/debug/extension.py"
+rm -rf build
+mv dist/extension ../release/extension
+rm -rf dist
+rm *.spec
