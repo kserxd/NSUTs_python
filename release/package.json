@@ -1,0 +1,50 @@
+{
+  "name": "nsuts",
+  "displayName": "NSUTs",
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nsuts.start",
+        "title": "Start"
+      },
+      {
+        "command": "nsuts.reload",
+        "title": "Reload"
+      },
+      {
+        "command": "nsuts.login",
+        "title": "Login"
+      },
+      {
+        "command": "nsuts.change",
+        "title": "Change"
+      },
+      {
+        "command": "nsuts.buildAndRun",
+        "title": "Build And Run"
+      },
+      {
+        "command": "nsuts.submit",
+        "title": "Submit"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "nsuts.buildAndRun",
+        "key": "SHIFT+F5"
+      },
+      {
+        "command": "nsuts.submit",
+        "key": "SHIFT+F4"
+      }
+    ]
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.58.0"
+  }
+}

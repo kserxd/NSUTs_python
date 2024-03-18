@@ -1,2 +1,0 @@
-vscode.py==2.0.0b2
-requests
